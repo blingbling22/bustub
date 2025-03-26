@@ -24,8 +24,19 @@ namespace bustub {
  */
 template <class T>
 auto Trie::Get(std::string_view key) const -> const T * {
-  throw NotImplementedException("Trie::Get is not implemented.");
-
+  // throw NotImplementedException("Trie::Get is not implemented.");
+  auto node = root_;
+  for( size_t i = 0; i < key.size(); i++ ) {
+    if (node==nullptr || node->children_.find(key[i]) == node->children_.end()) {
+      return nullptr;
+    }
+    node = node->children_.find(key[i])->second;
+  }
+  const auto *value_node = dynamic_cast<const TrieNodeWithValue<T> *>(node.get());
+  if( value_node == nullptr ) {
+    return nullptr;
+  }
+  return value_node->value_.get();
   // You should walk through the trie to find the node corresponding to the key. If the node doesn't exist, return
   // nullptr. After you find the node, you should use `dynamic_cast` to cast it to `const TrieNodeWithValue<T> *`. If
   // dynamic_cast returns `nullptr`, it means the type of the value is mismatched, and you should return nullptr.
@@ -39,10 +50,26 @@ auto Trie::Get(std::string_view key) const -> const T * {
 template <class T>
 auto Trie::Put(std::string_view key, T value) const -> Trie {
   // Note that `T` might be a non-copyable type. Always use `std::move` when creating `shared_ptr` on that value.
-  throw NotImplementedException("Trie::Put is not implemented.");
+  // throw NotImplementedException("Trie::Put is not implemented.");
 
   // You should walk through the trie and create new nodes if necessary. If the node corresponding to the key already
   // exists, you should create a new `TrieNodeWithValue`.
+  if (key == "") {
+    return this;
+  }
+  auto find_result = root_->Find(key);
+  if ( std::is_same<decltype(*find_result), T>::value) {
+    return this;
+  }
+  for (size_t i = 0; i < key.size() - 1; i++) {
+    if (find_result->children_.find(key[i]) == find_result->children_.end()) {
+      find_result->children_[key[i]] = std::make_shared<TrieNode>();
+    }
+    find_result = find_result->children_[key[i]];
+  }
+  find_result->children_[key[key.size() - 1]] = std::make_shared<TrieNodeWithValue<T>>(value);
+
+  return nullptr;
 }
 
 /**
