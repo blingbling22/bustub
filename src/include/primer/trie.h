@@ -68,6 +68,7 @@ class TrieNode {
   //
   // You cannot use the copy constructor to clone the node because it doesn't know whether a `TrieNode`
   // contains a value or not.
+  
   //
   // Note: if you want to convert `unique_ptr` into `shared_ptr`, you can use `std::shared_ptr<T>(std::move(ptr))`.
   virtual auto Clone() const -> std::unique_ptr<TrieNode> { return std::make_unique<TrieNode>(children_); }

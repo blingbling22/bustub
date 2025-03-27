@@ -54,22 +54,38 @@ auto Trie::Put(std::string_view key, T value) const -> Trie {
 
   // You should walk through the trie and create new nodes if necessary. If the node corresponding to the key already
   // exists, you should create a new `TrieNodeWithValue`.
-  if (key == "") {
-    return this;
-  }
-  auto find_result = root_->Find(key);
-  if ( std::is_same<decltype(*find_result), T>::value) {
-    return this;
-  }
-  for (size_t i = 0; i < key.size() - 1; i++) {
-    if (find_result->children_.find(key[i]) == find_result->children_.end()) {
-      find_result->children_[key[i]] = std::make_shared<TrieNode>();
-    }
-    find_result = find_result->children_[key[i]];
-  }
-  find_result->children_[key[key.size() - 1]] = std::make_shared<TrieNodeWithValue<T>>(value);
+  auto put_helper = [&](auto &self, const std::shared_ptr<const TrieNode> &node, size_t depth)
+                           -> std::shared_ptr<const TrieNode> {
+        if (depth == key.size()) {
+            std::map<char, std::shared_ptr<const TrieNode>> children;
+            if (node != nullptr) {
+                children = node->children_;
+            }
+            // 返回叶子节点 
+            return std::make_shared<TrieNodeWithValue<T>>(children, std::make_shared<T>(std::move(value)));
+        }
 
-  return nullptr;
+        char c = key[depth];
+        std::shared_ptr<const TrieNode> child = nullptr;
+        if (node != nullptr && node->children_.find(c) != node->children_.end()) {
+            child = node->children_.at(c);
+        }
+
+        auto new_child = self(self, child, depth + 1);
+
+        if (node != nullptr) {
+            auto new_node = std::shared_ptr<const TrieNode>(node->Clone());
+            auto mut_children = const_cast<std::map<char, std::shared_ptr<const TrieNode>> *>(&new_node->children_);
+            (*mut_children)[c] = new_child;
+            return new_node;
+        }
+        std::map<char, std::shared_ptr<const TrieNode>> new_children;
+        new_children[c] = new_child;
+        return std::make_shared<TrieNode>(new_children);
+    };
+
+    auto new_root = put_helper(put_helper, root_, 0);
+    return Trie(new_root);
 }
 
 /**
